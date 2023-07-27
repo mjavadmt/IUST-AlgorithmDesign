@@ -1,0 +1,75 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using TestCommon;
+using static A4.Q1BuildingRoads;
+
+
+namespace A4
+{
+    public class Q2Clustering : Processor
+    {
+        public Q2Clustering(string testDataName) : base(testDataName) { }
+
+        public override string Process(string inStr) =>
+            TestTools.Process(inStr, (Func<long, long[][], long, double>)Solve);
+
+        public double Solve(long pointCount, long[][] points, long clusterCount)
+        {
+            long[] parents = new long[pointCount];
+            long[] ranks = new long[pointCount];
+            List<(long , long , double)> distances = new List<(long, long, double)>(); 
+            for (int i = 0 ; i < pointCount ; i ++)
+            {
+                parents[i] = i;
+                ranks[i] = 1;
+                for ( int j = i+1 ; j < pointCount ; j++)
+                {
+                    distances.Add((i , j ,GetDistance(points[i] , points[j])));
+                }
+            }
+            distances = distances.OrderBy(x => x.Item3).ToList();
+            long groups_count_so_far = pointCount ;
+            foreach (var edge in distances)
+            {
+                if (Find(edge.Item1 , parents) != Find(edge.Item2 , parents))
+                {
+                    if (groups_count_so_far == clusterCount)
+                        return Math.Round(edge.Item3 , 6) ;
+                    Union(edge.Item1 , edge.Item2 , ranks , parents);
+                    groups_count_so_far -= 1 ;
+                }
+            }
+            return 0;
+        }
+        private double GetDistance (long[] first_point , long[] second_point)
+        {
+            return Math.Sqrt(Math.Pow((first_point[0] - second_point[0] ) , 2) + Math.Pow((first_point[1] - second_point[1] ) , 2) ); 
+        } 
+        private long Find(long u, long[] parents)
+        {
+            while (u != parents[u])
+            {
+                u = parents[u];
+            }
+            return parents[u];
+        }
+        private void Union(long x , long y , long[] ranks , long[] parents)
+        {
+            x = Find(x , parents);
+            y = Find(y , parents);
+            if (x == y)
+                return;
+            if (ranks[x] > ranks[y])
+                parents[y] = x ;
+            else {
+                parents[x] = y;
+                if (ranks[x] == ranks[y])
+                    ranks[y] += 1;
+            }
+        }
+    }
+
+}
